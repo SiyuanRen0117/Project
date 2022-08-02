@@ -89,7 +89,7 @@ void txtRead(const string filePath, const string keyWord, Mat& outputMat){
 
 /**
  * @brief read all the ply files and save the points into a big matrix
- * 
+ * @param testrow
  * @param pcMat the matrix that contains all the points read from PLY files
  * @param str either "static" or "dynamic", to read either static ply files or dynamic ply files
  */
@@ -97,6 +97,7 @@ void readPLY(Mat& pcMat, string str){
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
     string pc_path=kitti360+"data_3d_semantics/2013_05_28_drive_0007_sync/"+str;
     vector<cv::String> fn;
+    Mat testrow;
 
     //read all the file names in the folder
     glob(pc_path, fn, false);
@@ -117,8 +118,12 @@ void readPLY(Mat& pcMat, string str){
                             double(cloud->points[i].b), double(cloud->points[i].g), double(cloud->points[i].r));
                             // cloud->points[i].x, cloud->points[i].y, cloud->points[i].z);      
             pcMat.push_back(point_mat);
+
         }
     }
+    cout << "pcMat" << pcMat.size() << endl; 
+    testrow = pcMat.rowRange(0, 100).clone();
+    cout << "testrow" << testrow<< endl; 
 }
 
 /**
@@ -143,10 +148,12 @@ bool world2image(const Mat pcMattt, Mat& Pimg, const Mat intrinsicMat, const int
     Mat cam2world;
     txtRead("data_poses/2013_05_28_drive_0007_sync/cam0_to_world.txt",kw, cam2world);
     Mat R;
+
     cam2world(Range(0,3),Range(0,3)).copyTo(R);
     Mat t;
     cam2world(Range(0,3),Range(3,4)).copyTo(t);
-
+    cout << "R" << R << endl; 
+    cout << "T" << t << endl; 
     //convert from world frame to camera frame
     Mat Pworld;
     Pworld = pcMattt.rowRange(0,3); //Pworld=pcMattt前三行，也就是xyz
@@ -154,10 +161,11 @@ bool world2image(const Mat pcMattt, Mat& Pimg, const Mat intrinsicMat, const int
     Pworld.row(1)-=t.at<double>(1,0);//p-t
     Pworld.row(2)-=t.at<double>(2,0);//p-t
     Mat point_cam = R.t() * Pworld; // R.inv() = R.t(), world frame convert to camera frame
-
+    // cout << "Pworld" << Pworld << endl;
+    // cout << "point_cam" << point_cam << endl;
     //convert from camera frame to image frame
     Mat point_proj = intrinsicMat * point_cam; //intrinsic matrix * point_cam = point in image frame
-
+    // cout << "point_proj" << point_proj << endl;
     //copy the transformed image coordinates back to pcMattt
     point_proj.copyTo(pcMattt.rowRange(0,3));
     
@@ -181,6 +189,7 @@ bool world2image(const Mat pcMattt, Mat& Pimg, const Mat intrinsicMat, const int
             pcMattt.col(i).copyTo(filter1.col(non_zeros));
             non_zeros+=1;
         }
+    
     }
     end = clock(); //stop timing
     t_diff=(double)(end-start)/CLOCKS_PER_SEC; //calculate time difference
@@ -232,6 +241,7 @@ int main(){
 
     //read matrices from files
     readPLY(pcMat, "static"); //read static ply files
+
     // readPLY(pcMat, "dynamic"); //read dynamic ply files
     pcMat = pcMat.t(); //transpose pcMat
     // cout<<"pc_Mat size "<<pcMat.size<<endl;
@@ -334,7 +344,7 @@ int main(){
 
         // display image
         imshow("frame " + frameId, merged_mat);
-        imwrite("frame.jpg", merged_mat);
+        imwrite("/media/ren/EXTERNAL_USB/KITTI360_DATASET/frame.jpg", merged_mat);
         waitKey(0);
 
         // //build correspondense between the template in frame1 and the template in frame2
