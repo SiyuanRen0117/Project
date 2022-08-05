@@ -102,9 +102,10 @@ void readPLY(Mat& pcMat, string str){
     //read all the file names in the folder
     glob(pc_path, fn, false);
     size_t count = fn.size();
-    
+    // cout << count << endl;
     //go through the files one by one
     for (int i=0; i<count; i++){
+    // for (int i=0; i<4; i++){
     // for (int i=0; i<2; i++){
         if (pcl::io::loadPLYFile<pcl::PointXYZRGB> (fn[i], *cloud) == -1) //load the file
         {
@@ -112,7 +113,9 @@ void readPLY(Mat& pcMat, string str){
             exit(-1);
         }
         //go through the points one by one
+        // cout << cloud->points.size () << endl;
         for (size_t i = 0; i < cloud->points.size (); ++i){
+        // for (size_t i = 0; i < 100; ++i){
         // for (size_t i = 0; i < 50000; ++i){
             Mat point_mat = (Mat_<double>(1,6) << cloud->points[i].x, cloud->points[i].y, cloud->points[i].z, 
                             double(cloud->points[i].b), double(cloud->points[i].g), double(cloud->points[i].r));
@@ -121,9 +124,9 @@ void readPLY(Mat& pcMat, string str){
 
         }
     }
-    cout << "pcMat" << pcMat.size() << endl; 
-    testrow = pcMat.rowRange(0, 100).clone();
-    cout << "testrow" << testrow<< endl; 
+    // cout << "pcMat" << pcMat << endl; 
+    // testrow = pcMat.rowRange(0, 100).clone();
+    // cout << "testrow" << testrow<< endl; 
 }
 
 /**
@@ -152,20 +155,24 @@ bool world2image(const Mat pcMattt, Mat& Pimg, const Mat intrinsicMat, const int
     cam2world(Range(0,3),Range(0,3)).copyTo(R);
     Mat t;
     cam2world(Range(0,3),Range(3,4)).copyTo(t);
-    cout << "R" << R << endl; 
-    cout << "T" << t << endl; 
+    // cout << "R" << R << endl; 
+    // cout << "T" << t << endl; 
     //convert from world frame to camera frame
     Mat Pworld;
     Pworld = pcMattt.rowRange(0,3); //Pworld=pcMattt前三行，也就是xyz
+    
     Pworld.row(0)-=t.at<double>(0,0);//p-t
     Pworld.row(1)-=t.at<double>(1,0);//p-t
     Pworld.row(2)-=t.at<double>(2,0);//p-t
+    // cout<<"before T"<< Pworld << endl;
+    // cout<<"transpose R"<< R.inv()<<endl;
+    // cout << "Before T shape" << Pworld.size() << endl;
     Mat point_cam = R.t() * Pworld; // R.inv() = R.t(), world frame convert to camera frame
-    // cout << "Pworld" << Pworld << endl;
+    // cout << "point_cam" << point_cam << endl;
     // cout << "point_cam" << point_cam << endl;
     //convert from camera frame to image frame
     Mat point_proj = intrinsicMat * point_cam; //intrinsic matrix * point_cam = point in image frame
-    // cout << "point_proj" << point_proj << endl;
+    // cout << "point_proj" << point_proj.size << endl;
     //copy the transformed image coordinates back to pcMattt
     point_proj.copyTo(pcMattt.rowRange(0,3));
     
@@ -207,6 +214,7 @@ bool world2image(const Mat pcMattt, Mat& Pimg, const Mat intrinsicMat, const int
     filter2 = filter1.colRange(0,non_zeros);
     filter2.copyTo(Pimg);
     Pimg.row(0) = filter2.row(0)/filter2.row(2);
+    // cout << "Pimg u"
     Pimg.row(1) = filter2.row(1)/filter2.row(2);
     end = clock(); //stop timing
     t_diff=(double)(end-start)/CLOCKS_PER_SEC; //calculate time difference
@@ -287,7 +295,7 @@ int main(){
 
 
     //loop through frame by frame
-    for(int i=0; i<2; i++){
+    for(int i=453; i<454; i++){
     // for(int i=0; i<1; i++){
         frameId = frameSequence[i];
         cout<<"frame: "<<frameId<<endl;
