@@ -95,7 +95,7 @@ void txtRead(const string filePath, const string keyWord, Mat& outputMat){
  */
 void readPLY(Mat& pcMat, string str){
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud (new pcl::PointCloud<pcl::PointXYZRGB>);
-    string pc_path=kitti360+"data_3d_semantics/2013_05_28_drive_0007_sync/"+str;
+    string pc_path=kitti360+"data_3d_semantics/2013_05_28_drive_0005_sync/"+str;
     vector<cv::String> fn;
     Mat testrow;
 
@@ -104,9 +104,9 @@ void readPLY(Mat& pcMat, string str){
     size_t count = fn.size();
     // cout << count << endl;
     //go through the files one by one
-    for (int i=0; i<count; i++){
+    // for (int i=0; i<count; i++){
     // for (int i=0; i<4; i++){
-    // for (int i=0; i<2; i++){
+    for (int i=0; i<1; i++){
         if (pcl::io::loadPLYFile<pcl::PointXYZRGB> (fn[i], *cloud) == -1) //load the file
         {
             PCL_ERROR ("Couldn't read file %s.ply \n",fn[i]);
@@ -115,7 +115,7 @@ void readPLY(Mat& pcMat, string str){
         //go through the points one by one
         // cout << cloud->points.size () << endl;
         for (size_t i = 0; i < cloud->points.size (); ++i){
-        // for (size_t i = 0; i < 100; ++i){
+        // for (size_t i = 9000; i < 10000; ++i){
         // for (size_t i = 0; i < 50000; ++i){
             Mat point_mat = (Mat_<double>(1,6) << cloud->points[i].x, cloud->points[i].y, cloud->points[i].z, 
                             double(cloud->points[i].b), double(cloud->points[i].g), double(cloud->points[i].r));
@@ -149,7 +149,7 @@ bool world2image(const Mat pcMattt, Mat& Pimg, const Mat intrinsicMat, const int
     string kw = to_string(frameId);
     start=clock();
     Mat cam2world;
-    txtRead("data_poses/2013_05_28_drive_0007_sync/cam0_to_world.txt",kw, cam2world);
+    txtRead("data_poses/2013_05_28_drive_0005_sync/cam0_to_world.txt",kw, cam2world);
     Mat R;
 
     cam2world(Range(0,3),Range(0,3)).copyTo(R);
@@ -172,7 +172,7 @@ bool world2image(const Mat pcMattt, Mat& Pimg, const Mat intrinsicMat, const int
     // cout << "point_cam" << point_cam << endl;
     //convert from camera frame to image frame
     Mat point_proj = intrinsicMat * point_cam; //intrinsic matrix * point_cam = point in image frame
-    // cout << "point_proj" << point_proj.size << endl;
+    // cout << "point_proj" << point_proj << endl;
     //copy the transformed image coordinates back to pcMattt
     point_proj.copyTo(pcMattt.rowRange(0,3));
     
@@ -217,6 +217,7 @@ bool world2image(const Mat pcMattt, Mat& Pimg, const Mat intrinsicMat, const int
     // cout << "Pimg u"
     Pimg.row(1) = filter2.row(1)/filter2.row(2);
     end = clock(); //stop timing
+    cout << "Pimg" << Pimg << endl; 
     t_diff=(double)(end-start)/CLOCKS_PER_SEC; //calculate time difference
     // printf("time for phase3 %f \n", t_diff);
     flag=true;
@@ -272,7 +273,7 @@ int main(){
 
 
     //open cam0_to_world file and extract all the frame index and save them to frameSequence
-    inFile.open(kitti360+"data_poses/2013_05_28_drive_0007_sync/cam0_to_world.txt");
+    inFile.open(kitti360+"data_poses/2013_05_28_drive_0005_sync/cam0_to_world.txt");
     if(!inFile){
         cout<<"unable to open file: cam0_to_world.txt"<<endl;
         exit(1);
@@ -295,7 +296,7 @@ int main(){
 
 
     //loop through frame by frame
-    for(int i=453; i<454; i++){
+    for(int i=0; i<1; i++){
     // for(int i=0; i<1; i++){
         frameId = frameSequence[i];
         cout<<"frame: "<<frameId<<endl;
