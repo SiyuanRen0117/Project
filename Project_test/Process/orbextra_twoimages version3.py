@@ -4,6 +4,8 @@ import os
 from PIL import Image
 from matplotlib import pyplot as plt
 
+
+
 #Main path
 
 KITTI360Path="/media/ren/EXTERNAL_USB/KITTI360_DATASET/"
@@ -31,7 +33,23 @@ def ORB(img):
     return kp, des
 
 
+def SIFT(img):
+    """
+     SIFT detector
+    """
+    sift = cv2.xfeatures2d.SIFT_create()
+    """find keypoint, and calculate descriptor"""
+    kp, des = sift.detectAndCompute(img, None)
 
+    # plot keypoints
+    img2 = cv2.drawKeypoints(img, kp, None, color=(0, 255, 0), flags=0)
+
+ 
+    plt.figure(figsize=(10, 8), dpi=100)
+    plt.imshow(img2[:, :, ::-1])
+    plt.xticks([]), plt.yticks([])
+    plt.show()
+    return kp, des
 
 
 """
@@ -59,7 +77,7 @@ def ByBFMatcher(img1, img2, kp1, kp2, des1, des2, flag="ORB"):
     # else:
         # ORB
     bf = cv2.BFMatcher_create(cv2.NORM_HAMMING, crossCheck=False)
-    ms = bf.match(des1, des2 )
+    ms = bf.match(des1, des2)
     ms = sorted(ms, key=lambda x: x.distance)
     img3 = cv2.drawMatches(img1, kp1, img2, kp2, ms, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     cv2.imshow("Matches", img3)
@@ -67,7 +85,7 @@ def ByBFMatcher(img1, img2, kp1, kp2, des1, des2, flag="ORB"):
     return ms
 
 
-def ByFlann(img1, img2, kp1, kp2, des1, des2, flag="ORB"):
+def ByFlann(img1, img2, kp1, kp2, des1, des2, flag):
     """
         2. FLANN matching
         :param img1: image 1
@@ -78,20 +96,20 @@ def ByFlann(img1, img2, kp1, kp2, des1, des2, flag="ORB"):
         :param des2: descriptor of frame 2
         :return:
         """
-    # if (flag == "SIFT" or flag == "sift"):
-    #     # SIFT
-    #     FLANN_INDEX_KDTREE = 1
-    #     index_params = dict(algorithm=FLANN_INDEX_KDTREE,
-    #                         trees=5)
-    #     search_params = dict(check=50)
-    # else:
+    if (flag == "SIFT" or flag == "sift"):
+        # SIFT
+        FLANN_INDEX_KDTREE = 1
+        index_params = dict(algorithm=FLANN_INDEX_KDTREE,
+                            trees=5)
+        search_params = dict(check=50)
+    else:
     # ORB
-    FLANN_INDEX_LSH = 6
-    index_params = dict(algorithm=FLANN_INDEX_LSH,
-                        table_number=6,
-                        key_size=12,
-                        multi_probe_level=1)
-    search_params = dict(check=50)
+        FLANN_INDEX_LSH = 6
+        index_params = dict(algorithm=FLANN_INDEX_LSH,
+                            table_number=6,
+                            key_size=12,
+                            multi_probe_level=1)
+        search_params = dict(check=50)
     # parameters of FLANN
     flann = cv2.FlannBasedMatcher(index_params, search_params)
     matches = flann.knnMatch(des1, des2, k=2)
@@ -99,7 +117,7 @@ def ByFlann(img1, img2, kp1, kp2, des1, des2, flag="ORB"):
 
 
 """
-optimization of matching results, applying RANSAC
+optimization of matching 07frame00, applying RANSAC
 """
 
 def RANSAC(img1, img2, kp1, kp2, matches):
@@ -160,32 +178,38 @@ def RANSAC(img1, img2, kp1, kp2, matches):
 
     cv2.imshow("before", img33)
     cv2.imshow("now", img3)
-    cv2.imwrite('matching results.jpg',img3)
+    cv2.imwrite('matching 05frame001.jpg',img3)
     cv2.waitKey(0)
 
 
 # img1=Image.open(os.path.join(KITTI360Path,'data_2d_raw/2013_05_28_drive_0007_sync/image_00/data_rect/0000000003.png'))
-img1=Image.open(os.path.join(KITTI360Path,'data_2d_raw/2013_05_28_drive_0005_sync/image_00/data_rect/0000000003.png'))
-# img1=Image.open(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0007_sync','frame_02.jpg'))
-img2=Image.open(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0005_sync','frame_00.png'))
-# img2=Image.open(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0007_sync','capture2.jpg'))
-# img2=Image.open(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0007_sync','capture2_2.jpg'))
+# img1=Image.open(os.path.join(KITTI360Path,'data_2d_raw/2013_05_28_drive_0005_sync/image_00/data_rect/0000000001.png'))
+img1=Image.open(os.path.join(KITTI360Path,'Test_data/00000.jpg'))
+# img2=Image.open(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0005_sync','frame_02.jpg'))
+# img2=Image.open(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0005_sync','frame_00.png'))
+# img2=Image.open(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0005_sync','05_frame_00.png'))
+img2=Image.open(os.path.join(KITTI360Path,'Test_data/00000-simulation.jpg'))
 x=img1.width
 y=img1.height
 
-# img1 = cv2.imread(os.path.join(KITTI360Path,'data_2d_raw/2013_05_28_drive_0007_sync/image_00/data_rect/0000000003.png'))
-img1 = cv2.imread(os.path.join(KITTI360Path,'data_2d_raw/2013_05_28_drive_0005_sync/image_00/data_rect/0000000003.png'))
+img1 = cv2.imread(os.path.join(KITTI360Path,'Test_data/00000.jpg'))
+# img1 = cv2.imread(os.path.join(KITTI360Path,'data_2d_raw/2013_05_28_drive_0005_sync/image_00/data_rect/0000000003.png'))
 # img2 = cv2.imread(os.path.join(KITTI360Path,'frame.jpg'))
 
 # img2 = cv2.imread(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0005_sync','05_frame_00.png'))
-# img2 = cv2.imread(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0005_sync','capture2.jpg'))
-img2 = cv2.imread(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0005_sync','frame_00.png'))
+# img2 = cv2.imread(os.path.join(KITTI360Path,'data_rendered_image/2013_05_28_drive_0005_sync','capture1_1.jpg'))
+img2 = cv2.imread(os.path.join(KITTI360Path,'Test_data/00000-simulation.jpg'))
 # img1=cv2.resize(img1,(x,y))
 img2=cv2.resize(img2,(x,y))
 
-kp1, des1 = ORB(img1)
-kp2, des2 = ORB(img2)
-matches = ByBFMatcher(img1, img2, kp1, kp2, des1, des2, "ORB")
+# kp1, des1 = ORB(img1)
+# kp2, des2 = ORB(img2)
+# matches = ByBFMatcher(img1, img2, kp1, kp2, des1, des2, "ORB")
+
+kp1, des1 = SIFT(img1)
+kp2, des2 = SIFT(img2)
+matches = ByBFMatcher(img1, img2, kp1, kp2, des1, des2, "SIFT")
+
 # matches = ByFlann(img1, img2, kp1, kp2, des1, des2, "ORB")
-print('matching 05frame00',matches)
+print('matching 07frame00',matches)
 RANSAC(img1, img2, kp1, kp2, matches)
