@@ -87,6 +87,6 @@ cv2.waitKey(0)
 # cv2.destroyAllWindows()  
 # print(matches)
 
-
+RANSAC(img1, img2, kp1, kp2, matches)
 # img3 = cv2.drawMatches(img1, kp1, img2, kp2, matches[: 2000], None, flags=2)
 # plt.imshow(img3), plt.show()
