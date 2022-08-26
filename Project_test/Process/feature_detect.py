@@ -1,4 +1,4 @@
-from itertools import count
+
 import numpy as np
 import cv2
 import os
@@ -98,16 +98,18 @@ def Brute(img1, img2, kp1, kp2, des1, des2, flag):
     # if type(des1)!=NoneType and type(des2)!=NoneType:
     if (flag == "SIFT" or flag == "SURF"):
         # SIFT
-        bf = cv2.BFMatcher_create(cv2.NORM_L1, crossCheck=True)
-        
+        # bf = cv2.BFMatcher_create(cv2.NORM_L1, crossCheck=True)
+        bf=cv2.BFMatcher_create(cv2.NORM_L1, crossCheck=False)
+        ms = bf.knnMatch(des1, des2, k=2)
     else:
         # ORB
         # bf = cv2.BFMatcher_create(cv2.NORM_L1, crossCheck=True)
-        bf = cv2.BFMatcher_create(cv2.NORM_HAMMING, crossCheck=True)
+        bf = cv2.BFMatcher_create(cv2.NORM_HAMMING, crossCheck=False)
+        ms = bf.match(des1, des2)
     # print('des1',des1.shape)
     # print('des2',des2.shape)
     # ms = bf.knnMatch(des1, des2, k=2)
-    ms = bf.match(des1, des2)
+   
     # ms = sorted(ms, key=lambda x: x.distance)
     # img3 = cv2.drawMatches(img1, kp1, img2, kp2, ms, None, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     # cv2.imshow("Matches", img3)
@@ -156,6 +158,7 @@ def FLANN(img1, img2, kp1, kp2, des1, des2, flag):
         index_params = dict(algorithm=FLANN_INDEX_KDTREE,
                             trees=5)
         search_params = dict(check=100)
+        print("SIFT OR SURF")
     else:
         # ORB
         FLANN_INDEX_LSH = 6
@@ -163,7 +166,7 @@ def FLANN(img1, img2, kp1, kp2, des1, des2, flag):
                             table_number=6,
                             key_size=12,
                             multi_probe_level=1)
-        
+        print("ORB")
         
         search_params = dict(check=100)
     # define FLANN parameter
@@ -184,6 +187,7 @@ def RANSAC(img1, img2, kp1, kp2, matches,MIN_MATCH_COUNT):
     # MIN_MATCH_COUNT = 500
     # Good matches need to be stored according to lowe's ratio test.
     matchType = type(matches[0])
+    print(len(matches))
     good = []
     bad=[]
     print(len(matches))
@@ -192,10 +196,11 @@ def RANSAC(img1, img2, kp1, kp2, matches,MIN_MATCH_COUNT):
         # Search for matching
         good = matches
     else:
-        # knnMatch
-        ratio_thresh = 0.75
+        #knnMatch
+        print("ratio test")
+        ratio_thresh = 0.65
         for m, n in matches:
-            # print(m.distance,n.distance)
+            # print("m,n",m,n)
             if m.distance < ratio_thresh * n.distance:
                 good.append(m)
             # else:
@@ -206,6 +211,7 @@ def RANSAC(img1, img2, kp1, kp2, matches,MIN_MATCH_COUNT):
             #     #if gradient 
                  #2 points from image 1 and 2, gradient < 0.0872665 radians
                 
+                
     img = cv2.drawMatches(img1, kp1, img2, kp2, good, None,  flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     cv2.imshow("ratio", img)
     cv2.imwrite("after ration.jpg",img)
@@ -214,17 +220,18 @@ def RANSAC(img1, img2, kp1, kp2, matches,MIN_MATCH_COUNT):
     if len(good) > MIN_MATCH_COUNT:
         #One list contains the coordinates of key points in the query image, and the other list contains the coordinates of matching key points in the scene:
         src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-        print('pt1',kp1[0].pt,kp1[0].size,kp1[0].angle)
-        print('pt1',kp2[0].pt,kp2[0].size,kp2[0].angle)
+        # print(kp1[0].queryIdx)
+        print('pt1',len(src_pts))
+        
         dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
-
+        print('pt2',len(dst_pts))
         # M: 3x3 Homography matrix. last number is the error of the transformation between points on original images and target images.
         M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
-        
+        # print()
         # M, mask = cv2.findFundamentalMat(src_pts, dst_pts, method=cv2.RANSAC,ransacReprojThreshold=0.9, confidence=0.99)
         print('M',M)
         matchesMask = mask.ravel().tolist()
-
+        print(matchesMask.count(1))
         # h, w = img1.shape
         # pts = np.float32([[0, 0], [0, h - 1], [w - 1, h - 1], [w - 1, 0]]).reshape(-1, 1, 2)
         # dst = cv2.perspectiveTransform(pts, M)
@@ -269,9 +276,9 @@ def RANSAC(img1, img2, kp1, kp2, matches,MIN_MATCH_COUNT):
     # print("kp1",len(kp1))
     img33 = cv2.drawMatches(img1, kp1, img2, kp2, good, None, **draw_params1) #outlier drawing
     cv2.imshow("before", img33)
-    cv2.imwrite('matching FLANN00_00000v2sift outliers.jpg',img33)
+    cv2.imwrite('matching FLANN00_00000v2ss outliers.jpg',img33)
     cv2.imshow("now", img3)
-    cv2.imwrite('matching FLANN00_00000v2sift.jpg',img3)
+    cv2.imwrite('matching FLANN00_00000v2ss.jpg',img3)
     cv2.waitKey(20)
     # return good_match_len
 
@@ -309,8 +316,8 @@ kp2, des2 = SIFT(img2)
 
 # matches = Brute(img1, img2, kp1, kp2, des1, des2, "SURF")
 # matches = FLANN(img1, img2, kp1, kp2, des1, des2, "SURF")
-matches = FLANN(img1, img2, kp1, kp2, des1, des2, "SIFT")
-# matches = Brute(img1, img2, kp1, kp2, des1, des2, "SIFT")
+# matches = FLANN(img1, img2, kp1, kp2, des1, des2, "SIFT")
+matches = Brute(img1, img2, kp1, kp2, des1, des2, "SIFT")
 # matches = Brute(img1, img2, kp1, kp2, des1, des2, "ORB")
 # matches = FLANN(img1, img2, kp1, kp2, des1, des2, "ORB")
 RANSAC(img1, img2, kp1, kp2, matches,MIN_MATCH_COUNT=10)
